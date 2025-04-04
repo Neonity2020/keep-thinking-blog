@@ -3,15 +3,22 @@ import { MarkdownRenderer } from "@/components/markdown-renderer";
 import { getBlogPost } from "@/lib/blog";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Metadata } from "next";
 
-interface BlogPageProps {
-  params: {
+type BlogPageProps = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+export const metadata: Metadata = {
+  title: "博客详情",
+};
 
 export default async function BlogPage({ params }: BlogPageProps) {
-  const blog = await getBlogPost(params.id);
+  const { id } = await params;
+  const blog = await getBlogPost(id);
 
   if (!blog) {
     notFound();

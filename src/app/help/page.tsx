@@ -152,7 +152,7 @@ export default function HelpPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  注册账户后，点击"写文章"按钮即可开始创作。您可以使用我们的富文本编辑器来编写和格式化您的文章。
+                  注册账户后，点击&quot;写文章&quot;按钮即可开始创作。您可以使用我们的富文本编辑器来编写和格式化您的文章。
                 </p>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ export default function HelpPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  在您的仪表板中找到要修改的文章，点击"编辑"按钮即可进行修改。修改完成后，点击"更新"按钮保存更改。
+                  在您的仪表板中找到要修改的文章，点击&quot;编辑&quot;按钮即可进行修改。修改完成后，点击&quot;更新&quot;按钮保存更改。
                 </p>
               </CardContent>
             </Card>
@@ -174,7 +174,7 @@ export default function HelpPage() {
               </CardHeader>
               <CardContent>
                 <p className="text-muted-foreground">
-                  您可以在账户设置中找到"删除账户"选项。请注意，删除账户是永久性的，所有数据将被删除且无法恢复。
+                  您可以在账户设置中找到&quot;删除账户&quot;选项。请注意，删除账户是永久性的，所有数据将被删除且无法恢复。
                 </p>
               </CardContent>
             </Card>

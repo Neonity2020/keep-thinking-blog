@@ -115,7 +115,7 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle>如何注册成为博客作者？</CardTitle>
               <CardDescription>
-                您可以通过点击网站右上角的"注册"按钮，填写相关信息完成注册。注册后，您需要等待管理员审核通过才能开始发布博客。
+                您可以通过点击网站右上角的&quot;注册&quot;按钮，填写相关信息完成注册。注册后，您需要等待管理员审核通过才能开始发布博客。
               </CardDescription>
             </CardHeader>
           </Card>
@@ -123,7 +123,7 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle>如何提交博客文章？</CardTitle>
               <CardDescription>
-                登录后，点击"创建博客"按钮，使用我们的编辑器编写博客内容，完成后点击"发布"按钮提交。您的博客需要经过管理员审核后才能公开显示。
+                登录后，点击&quot;创建博客&quot;按钮，使用我们的编辑器编写博客内容，完成后点击&quot;发布&quot;按钮提交。您的博客需要经过管理员审核后才能公开显示。
               </CardDescription>
             </CardHeader>
           </Card>
@@ -131,7 +131,7 @@ export default function ContactPage() {
             <CardHeader>
               <CardTitle>如何修改我的个人信息？</CardTitle>
               <CardDescription>
-                登录后，点击右上角的头像，选择"设置"选项，您可以在设置页面修改您的个人信息、密码等。
+                登录后，点击右上角的头像，选择&quot;设置&quot;选项，您可以在设置页面修改您的个人信息、密码等。
               </CardDescription>
             </CardHeader>
           </Card>
