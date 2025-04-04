@@ -1,6 +1,11 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
+import { useUser } from "@/components/providers/user-provider";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 // 模拟博客数据
 const blogs = [
@@ -28,14 +33,58 @@ const blogs = [
 ];
 
 export default function DashboardPage() {
+  const { user, loading, signOut } = useUser();
+  const router = useRouter();
+
+  // 使用useEffect处理重定向，而不是在渲染过程中直接调用router.push
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [loading, user, router]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    router.push('/login');
+  };
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-center">
+          <p>加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // 如果用户未登录，显示加载状态，useEffect会处理重定向
+  if (!user) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="flex items-center justify-center">
+          <p>加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="container mx-auto py-10">
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-4">
-          <h1 className="text-3xl font-bold tracking-tight">仪表盘</h1>
-          <p className="text-muted-foreground">
-            管理您的博客文章和账户设置
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-4">
+            <h1 className="text-3xl font-bold tracking-tight">仪表盘</h1>
+            <p className="text-muted-foreground">
+              管理您的博客文章和账户设置
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <p className="text-sm text-muted-foreground">{user.email}</p>
+            <Button variant="outline" onClick={handleSignOut}>
+              退出
+            </Button>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
