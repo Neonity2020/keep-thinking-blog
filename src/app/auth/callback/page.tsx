@@ -17,7 +17,18 @@ export default function AuthCallbackPage() {
         return;
       }
       
-      if (session) {
+      // 获取 URL 中的认证代码
+      const code = new URLSearchParams(window.location.search).get('code');
+      if (code) {
+        try {
+          // 交换代码以获取会话
+          await supabase.auth.exchangeCodeForSession(code);
+          router.push("/dashboard");
+        } catch (error) {
+          console.error("代码交换错误:", error);
+          router.push("/login");
+        }
+      } else if (session) {
         router.push("/dashboard");
       } else {
         router.push("/login");
