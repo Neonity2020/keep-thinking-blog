@@ -1,6 +1,11 @@
+"use client";
+
 import { BlogCard } from "@/components/blog-card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 // 模拟博客数据
 const blogs = [
@@ -43,6 +48,19 @@ const blogs = [
 ];
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        router.push("/blog");
+      }
+    };
+
+    checkAuthStatus();
+  }, [router]);
+
   return (
     <div className="container mx-auto py-10">
       <section className="flex flex-col items-center justify-center text-center py-20 space-y-6">
