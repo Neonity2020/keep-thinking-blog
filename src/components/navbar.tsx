@@ -86,7 +86,10 @@ export function Navbar() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.user_metadata?.avatar_url || `/avatars/0${Math.floor(Math.random() * 3) + 1}.svg`} alt={getDisplayName()} />
+                  <AvatarImage 
+                    src={user?.user_metadata?.avatar_url || `/avatars/0${Math.floor(Math.random() * 3) + 1}.svg`} 
+                    alt={getDisplayName()} 
+                  />
                   <AvatarFallback>{getInitials(getDisplayName())}</AvatarFallback>
                 </Avatar>
               </Button>

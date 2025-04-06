@@ -228,17 +228,17 @@ export default function DashboardPage() {
           </div>
         ) : (
           blogs.map((blog) => (
-            <Card key={blog.id} className="hover:shadow-md transition-shadow">
+            <Card key={blog.id} className="hover:shadow-md transition-shadow flex flex-col h-full">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg sm:text-xl line-clamp-2">{blog.title}</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
                   状态: {blog.status === 'published' ? '已发布' : '草稿'}
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-grow">
                 <p className="text-xs sm:text-sm text-gray-500">创建时间: {new Date(blog.created_at).toLocaleDateString()}</p>
               </CardContent>
-              <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-2">
+              <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-2 mt-auto">
                 <div className="flex gap-2 w-full sm:w-auto">
                   <Link href={`/blog/${blog.id}`} className="flex-1 sm:flex-none">
                     <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4">查看</Button>
