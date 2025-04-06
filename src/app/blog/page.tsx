@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Blog {
   id: string;
@@ -14,24 +16,39 @@ interface Blog {
   status: string;
 }
 
+const ITEMS_PER_PAGE = 9;
+
 export default function BlogListPage() {
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
+        setLoading(true);
+        const from = (page - 1) * ITEMS_PER_PAGE;
+        const to = from + ITEMS_PER_PAGE - 1;
+
         const { data, error } = await supabase
           .from('blogs')
           .select('*')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: false })
+          .range(from, to);
 
         if (error) {
           throw error;
         }
 
-        setBlogs(data || []);
+        if (page === 1) {
+          setBlogs(data || []);
+        } else {
+          setBlogs(prev => [...prev, ...(data || [])]);
+        }
+
+        setHasMore((data?.length || 0) === ITEMS_PER_PAGE);
         setError(null);
       } catch (error) {
         console.error('获取博客列表失败:', error);
@@ -42,15 +59,11 @@ export default function BlogListPage() {
     };
 
     fetchBlogs();
-  }, []);
+  }, [page]);
 
-  if (loading) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="text-center">加载中...</div>
-      </div>
-    );
-  }
+  const loadMore = () => {
+    setPage(prev => prev + 1);
+  };
 
   if (error) {
     return (
@@ -65,29 +78,60 @@ export default function BlogListPage() {
       <h1 className="text-3xl font-bold mb-8">博客文章</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {blogs.map((blog) => (
-          <Link href={`/blog/${blog.id}`} key={blog.id}>
-            <Card className="h-full hover:shadow-lg transition-shadow">
+        {loading && page === 1 ? (
+          // 首次加载时显示 skeleton
+          Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+            <Card key={index} className="h-full">
               <CardHeader>
-                <CardTitle>{blog.title}</CardTitle>
-                <CardDescription>
-                  发布于 {new Date(blog.created_at).toLocaleDateString()}
-                </CardDescription>
+                <Skeleton className="h-6 w-3/4 mb-2" />
+                <Skeleton className="h-4 w-1/2" />
               </CardHeader>
               <CardContent>
-                <div 
-                  className="prose prose-sm max-w-none line-clamp-3"
-                  dangerouslySetInnerHTML={{ 
-                    __html: blog.content.replace(/<[^>]*>/g, '').slice(0, 200) + '...' 
-                  }}
-                />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-full mb-2" />
+                <Skeleton className="h-4 w-2/3" />
               </CardContent>
             </Card>
-          </Link>
-        ))}
+          ))
+        ) : (
+          blogs.map((blog) => (
+            <Link href={`/blog/${blog.id}`} key={blog.id}>
+              <Card className="h-full hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CardTitle>{blog.title}</CardTitle>
+                  <CardDescription>
+                    发布于 {new Date(blog.created_at).toLocaleDateString()}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div 
+                    className="prose prose-sm max-w-none line-clamp-3"
+                    dangerouslySetInnerHTML={{ 
+                      __html: blog.content.replace(/<[^>]*>/g, '').slice(0, 200) + '...' 
+                    }}
+                  />
+                </CardContent>
+              </Card>
+            </Link>
+          ))
+        )}
       </div>
 
-      {blogs.length === 0 && (
+      {loading && page > 1 && (
+        <div className="text-center mt-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+        </div>
+      )}
+
+      {!loading && hasMore && (
+        <div className="text-center mt-8">
+          <Button onClick={loadMore} variant="outline">
+            加载更多
+          </Button>
+        </div>
+      )}
+
+      {!loading && blogs.length === 0 && (
         <div className="text-center text-gray-500 mt-8">
           暂无博客文章
         </div>

@@ -7,7 +7,12 @@ import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers/providers";
 import type { Metadata, Viewport } from "next";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -53,6 +58,15 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
+      <head>
+        <link
+          rel="preload"
+          href="/fonts/inter-var.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
           <div className="relative flex min-h-screen flex-col">
