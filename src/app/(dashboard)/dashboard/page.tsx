@@ -7,6 +7,7 @@ import { useUser } from "@/components/providers/user-provider";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabase';
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Blog {
   id: string;
@@ -15,6 +16,55 @@ interface Blog {
   created_at: string;
   author_id: string;
 }
+
+// 骨架屏组件
+const DashboardSkeleton = () => {
+  return (
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <Skeleton className="h-8 w-32" />
+        <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+          <Skeleton className="h-9 w-full sm:w-24" />
+          <Skeleton className="h-9 w-full sm:w-24" />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        {[1, 2, 3].map((i) => (
+          <Card key={i} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-5 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-8 w-16" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {[1, 2, 3, 4, 5, 6].map((i) => (
+          <Card key={i} className="hover:shadow-md transition-shadow">
+            <CardHeader className="pb-2">
+              <Skeleton className="h-6 w-full mb-2" />
+              <Skeleton className="h-4 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-4 w-32" />
+            </CardContent>
+            <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-2">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Skeleton className="h-9 w-full sm:w-16" />
+                <Skeleton className="h-9 w-full sm:w-16" />
+              </div>
+              <Skeleton className="h-9 w-full sm:w-16" />
+            </CardFooter>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+};
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useUser();
@@ -26,6 +76,7 @@ export default function DashboardPage() {
     draft: 0
   });
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -40,32 +91,11 @@ export default function DashboardPage() {
         return;
       }
 
+      setIsLoading(true);
       try {
         console.log('开始获取博客列表...');
-        console.log('当前用户ID:', user.id);
-        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
         
-        // 首先测试数据库连接
-        const { error: testError } = await supabase
-          .from('blogs')
-          .select('count')
-          .limit(1);
-
-        if (testError) {
-          console.error('数据库连接测试失败:', testError);
-          console.error('错误详情:', {
-            message: testError.message,
-            code: testError.code,
-            details: testError.details,
-            hint: testError.hint
-          });
-          setError(`数据库连接失败: ${testError.message}`);
-          return;
-        }
-
-        console.log('数据库连接测试成功');
-
-        // 获取博客列表
+        // 直接获取博客列表
         const { data, error } = await supabase
           .from('blogs')
           .select(`
@@ -80,12 +110,6 @@ export default function DashboardPage() {
 
         if (error) {
           console.error('获取博客列表失败:', error);
-          console.error('错误详情:', {
-            message: error.message,
-            code: error.code,
-            details: error.details,
-            hint: error.hint
-          });
           setError(`获取博客列表失败: ${error.message || '未知错误'}`);
           return;
         }
@@ -107,14 +131,12 @@ export default function DashboardPage() {
       } catch (error) {
         console.error('获取博客列表异常:', error);
         if (error instanceof Error) {
-          console.error('错误详情:', {
-            message: error.message,
-            stack: error.stack
-          });
           setError(`获取博客列表异常: ${error.message}`);
         } else {
           setError('获取博客列表时发生未知错误');
         }
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -148,84 +170,94 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
-    return <div>加载中...</div>;
+  if (loading || isLoading) {
+    return <DashboardSkeleton />;
   }
 
   return (
-    <div className="container mx-auto py-10">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">仪表盘</h1>
-        <div className="flex gap-4">
-          <Link href="/blog/new">
-            <Button>新建博客</Button>
+    <div className="container mx-auto px-4 sm:px-6 py-6 sm:py-10">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8 gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold">仪表盘</h1>
+        <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+          <Link href="/blog/new" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">新建博客</Button>
           </Link>
-          <Button onClick={handleSignOut}>退出登录</Button>
+          <Button onClick={handleSignOut} className="w-full sm:w-auto text-xs sm:text-sm px-3 sm:px-4">退出登录</Button>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded relative mb-4 text-sm" role="alert">
           <span className="block sm:inline">{error}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle>总博客数</CardTitle>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base sm:text-lg">总博客数</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.total}</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold">{stats.total}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>已发布</CardTitle>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base sm:text-lg">已发布</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.published}</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold">{stats.published}</p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>草稿</CardTitle>
+        <Card className="hover:shadow-md transition-shadow">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base sm:text-lg">草稿</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold">{stats.draft}</p>
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold">{stats.draft}</p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {blogs.map((blog) => (
-          <Card key={blog.id}>
-            <CardHeader>
-              <CardTitle>{blog.title}</CardTitle>
-              <CardDescription>
-                状态: {blog.status === 'published' ? '已发布' : '草稿'}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p>创建时间: {new Date(blog.created_at).toLocaleDateString()}</p>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <div className="flex gap-2">
-                <Link href={`/blog/${blog.id}`}>
-                  <Button variant="outline">查看</Button>
-                </Link>
-                <Link href={`/blog/${blog.id}/edit`}>
-                  <Button variant="outline">编辑</Button>
-                </Link>
-              </div>
-              <Button variant="destructive" onClick={() => handleDelete(blog.id)}>
-                删除
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {blogs.length === 0 ? (
+          <div className="col-span-full text-center py-8 bg-gray-50 rounded-lg">
+            <p className="text-gray-500">暂无博客内容</p>
+          </div>
+        ) : (
+          blogs.map((blog) => (
+            <Card key={blog.id} className="hover:shadow-md transition-shadow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg sm:text-xl line-clamp-2">{blog.title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  状态: {blog.status === 'published' ? '已发布' : '草稿'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs sm:text-sm text-gray-500">创建时间: {new Date(blog.created_at).toLocaleDateString()}</p>
+              </CardContent>
+              <CardFooter className="flex flex-col sm:flex-row justify-between gap-2 pt-2">
+                <div className="flex gap-2 w-full sm:w-auto">
+                  <Link href={`/blog/${blog.id}`} className="flex-1 sm:flex-none">
+                    <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4">查看</Button>
+                  </Link>
+                  <Link href={`/blog/${blog.id}/edit`} className="flex-1 sm:flex-none">
+                    <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4">编辑</Button>
+                  </Link>
+                </div>
+                <Button 
+                  variant="destructive" 
+                  onClick={() => handleDelete(blog.id)}
+                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4"
+                >
+                  删除
+                </Button>
+              </CardFooter>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );

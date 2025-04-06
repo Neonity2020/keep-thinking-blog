@@ -7,11 +7,10 @@ import { Footer } from "@/components/footer";
 import { Providers } from "@/components/providers/providers";
 import type { Metadata, Viewport } from "next";
 
-const inter = Inter({ 
-  subsets: ["latin"],
+const inter = Inter({
+  subsets: ['latin'],
   display: 'swap',
-  preload: true,
-  fallback: ['system-ui', 'arial'],
+  variable: '--font-inter',
 });
 
 export const viewport: Viewport = {

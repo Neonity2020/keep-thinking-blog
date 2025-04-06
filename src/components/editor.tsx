@@ -8,6 +8,8 @@ import Image from '@tiptap/extension-image';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import { createLowlight } from 'lowlight';
 import { cn } from '@/lib/utils';
+import '@/styles/editor.css';
+import { useEffect, useState } from 'react';
 
 const lowlight = createLowlight();
 
@@ -18,6 +20,12 @@ interface EditorProps {
 }
 
 export function Editor({ content, onChange, className }: EditorProps) {
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -36,10 +44,19 @@ export function Editor({ content, onChange, className }: EditorProps) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-sm sm:prose lg:prose-lg xl:prose-2xl mx-auto focus:outline-none',
+      },
+    },
   });
 
+  if (!isMounted) {
+    return <div className={cn('min-h-[200px]', className)} />;
+  }
+
   return (
-    <div className={cn('prose prose-sm max-w-none', className)}>
+    <div className={cn('relative', className)}>
       <EditorContent editor={editor} />
     </div>
   );
