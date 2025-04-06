@@ -5,68 +5,130 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import Link from "next/link";
 import { useUser } from "@/components/providers/user-provider";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { supabase } from '@/lib/supabase';
 
-// 模拟博客数据
-const blogs = [
-  {
-    id: "1",
-    title: "使用Next.js和MongoDB构建现代博客应用",
-    status: "已发布",
-    date: "2023-04-01",
-    views: 1200,
-  },
-  {
-    id: "2",
-    title: "Lexical编辑器：构建富文本编辑器的现代解决方案",
-    status: "草稿",
-    date: "2023-04-02",
-    views: 0,
-  },
-  {
-    id: "3",
-    title: "使用shadcn/ui构建美观的用户界面",
-    status: "已发布",
-    date: "2023-04-03",
-    views: 800,
-  },
-];
+interface Blog {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+  views: number;
+}
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useUser();
   const router = useRouter();
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    draft: 0,
+    totalViews: 0
+  });
 
-  // 使用useEffect处理重定向，而不是在渲染过程中直接调用router.push
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
     }
   }, [loading, user, router]);
 
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      if (!user) {
+        console.log('用户未登录，跳过获取博客列表');
+        return;
+      }
+
+      try {
+        console.log('开始获取博客列表...');
+        console.log('当前用户ID:', user.id);
+        
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('*')
+          .eq('author_id', user.id)
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          console.error('获取博客列表失败:', error);
+          console.error('错误详情:', {
+            message: error.message,
+            code: error.code,
+            details: error.details,
+            hint: error.hint
+          });
+          return;
+        }
+
+        if (!data) {
+          console.log('未获取到博客数据');
+          return;
+        }
+
+        console.log('成功获取博客列表:', data.length);
+        setBlogs(data);
+        setStats({
+          total: data.length,
+          published: data.filter(blog => blog.status === 'published').length,
+          draft: data.filter(blog => blog.status === 'draft').length,
+          totalViews: data.reduce((sum, blog) => sum + (blog.views || 0), 0)
+        });
+      } catch (error) {
+        console.error('获取博客列表异常:', error);
+        if (error instanceof Error) {
+          console.error('错误详情:', {
+            message: error.message,
+            stack: error.stack
+          });
+        }
+      }
+    };
+
+    fetchBlogs();
+  }, [user]);
+
   const handleSignOut = async () => {
-    await signOut();
-    router.push('/login');
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (error) {
+      console.error('退出登录失败:', error);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!user) return;
+
+    const { error } = await supabase
+      .from('blogs')
+      .delete()
+      .eq('id', id)
+      .eq('author_id', user.id);
+
+    if (error) {
+      console.error('Error deleting blog:', error);
+      return;
+    }
+
+    setBlogs(blogs.filter(blog => blog.id !== id));
   };
 
   if (loading) {
     return (
       <div className="container mx-auto py-10">
         <div className="flex items-center justify-center">
-          <p>加载中...</p>
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 w-48 bg-muted rounded"></div>
+            <div className="h-4 w-64 bg-muted rounded"></div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // 如果用户未登录，显示加载状态，useEffect会处理重定向
   if (!user) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="flex items-center justify-center">
-          <p>加载中...</p>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (
@@ -93,7 +155,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">总博客数</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">3</div>
+              <div className="text-2xl font-bold">{stats.total}</div>
             </CardContent>
           </Card>
           <Card>
@@ -101,7 +163,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">已发布</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2</div>
+              <div className="text-2xl font-bold">{stats.published}</div>
             </CardContent>
           </Card>
           <Card>
@@ -109,7 +171,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">草稿</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">1</div>
+              <div className="text-2xl font-bold">{stats.draft}</div>
             </CardContent>
           </Card>
           <Card>
@@ -117,7 +179,7 @@ export default function DashboardPage() {
               <CardTitle className="text-sm font-medium">总浏览量</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">2,000</div>
+              <div className="text-2xl font-bold">{stats.totalViews}</div>
             </CardContent>
           </Card>
         </div>
@@ -135,19 +197,19 @@ export default function DashboardPage() {
               <CardHeader>
                 <CardTitle>{blog.title}</CardTitle>
                 <CardDescription>
-                  发布于 {blog.date} · {blog.views} 次浏览
+                  发布于 {new Date(blog.created_at).toLocaleDateString('zh-CN')} · {blog.views || 0} 次浏览
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      blog.status === "已发布"
+                      blog.status === "published"
                         ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
                         : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
                     }`}
                   >
-                    {blog.status}
+                    {blog.status === "published" ? "已发布" : "草稿"}
                   </span>
                 </div>
               </CardContent>
@@ -159,7 +221,9 @@ export default function DashboardPage() {
                   <Button variant="outline" asChild>
                     <Link href={`/blog/${blog.id}/edit`}>编辑</Link>
                   </Button>
-                  <Button variant="destructive">删除</Button>
+                  <Button variant="destructive" onClick={() => handleDelete(blog.id)}>
+                    删除
+                  </Button>
                 </div>
               </CardFooter>
             </Card>

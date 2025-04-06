@@ -1,60 +1,53 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
-import { getBlogPost } from "@/lib/blog";
-import Link from "next/link";
+import { getAllBlogPosts, getBlogPost } from "@/lib/blog";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
-
-type BlogPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-  searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
-};
+import { use } from "react";
 
 export const metadata: Metadata = {
   title: "博客详情",
 };
 
-export default async function BlogPage({ params }: BlogPageProps) {
-  const { id } = await params;
-  const blog = await getBlogPost(id);
+export async function generateStaticParams() {
+  const blogs = await getAllBlogPosts();
+  return blogs.map((blog) => ({
+    id: blog.id,
+  }));
+}
+
+export default function BlogDetailPage({ params }: { params: { id: string } }) {
+  const blogId = use(Promise.resolve(params.id));
+  const blog = use(getBlogPost(blogId));
 
   if (!blog) {
     notFound();
   }
 
   return (
-    <div className="container mx-auto py-10 px-4">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center gap-2">
-            <Link href="/blog" className="text-sm text-muted-foreground hover:underline">
-              博客
-            </Link>
-            <span className="text-muted-foreground">/</span>
-            <span className="text-sm font-medium">{blog.title}</span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            {blog.title}
-          </h1>
+    <div className="container mx-auto py-10">
+      <Card>
+        <CardHeader>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={blog.author.avatar} alt={blog.author.name} />
-                <AvatarFallback>{blog.author.name[0]}</AvatarFallback>
-              </Avatar>
-              <div className="text-sm">
-                <span className="font-medium">{blog.author.name}</span>
+            <Avatar>
+              <AvatarImage src={blog.author.avatar} alt={blog.author.name} />
+              <AvatarFallback>{blog.author.name[0]}</AvatarFallback>
+            </Avatar>
+            <div>
+              <CardTitle className="text-3xl font-bold">{blog.title}</CardTitle>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                <span>{blog.author.name}</span>
+                <span>·</span>
+                <span>{blog.date}</span>
+                <span>·</span>
+                <span>{blog.readTime}</span>
               </div>
             </div>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{blog.date}</span>
-              <span>·</span>
-              <span>{blog.readTime}</span>
-            </div>
           </div>
-          <div className="flex gap-2">
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2 mb-6">
             {blog.tags.map((tag) => (
               <span
                 key={tag}
@@ -64,11 +57,11 @@ export default async function BlogPage({ params }: BlogPageProps) {
               </span>
             ))}
           </div>
-        </div>
-        <div className="prose prose-stone dark:prose-invert max-w-none">
-          <MarkdownRenderer content={blog.content} />
-        </div>
-      </div>
+          <div className="prose prose-stone dark:prose-invert max-w-none">
+            <MarkdownRenderer content={blog.content} />
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

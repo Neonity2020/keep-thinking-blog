@@ -8,12 +8,17 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { supabase, testSupabaseConnection } from "@/lib/supabase";
 import { toast } from "sonner";
+import { Label } from "@/components/ui/label";
 
 export default function LoginPage() {
   const router = useRouter();
   const [error, setError] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<string>("检查连接中...");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
 
   // 测试Supabase连接
   useEffect(() => {
@@ -30,32 +35,57 @@ export default function LoginPage() {
     checkConnection();
   }, []);
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-
     try {
-      console.log("尝试登录:", email);
-      
-      // 检查Supabase URL和密钥
-      console.log("Supabase URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
-      console.log("Supabase Key 长度:", process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.length);
+      // 表单验证
+      if (!formData.email || !formData.password) {
+        setError("请填写所有必填字段");
+        return;
+      }
+
+      if (!formData.email.includes('@')) {
+        setError("请输入有效的邮箱地址");
+        return;
+      }
+
+      if (formData.password.length < 6) {
+        setError("密码长度至少为6个字符");
+        return;
+      }
+
+      console.log("尝试登录:", formData.email);
       
       const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: formData.email,
+        password: formData.password,
       });
 
       if (error) {
         console.error("登录错误:", error);
-        setError(error.message);
-      } else {
-        console.log("登录成功:", data);
+        if (error.message.includes("Invalid login credentials")) {
+          setError("邮箱或密码错误");
+        } else if (error.message.includes("Email not confirmed")) {
+          setError("邮箱未验证，请先验证您的邮箱");
+        } else {
+          setError(error.message);
+        }
+        return;
+      }
+
+      if (data?.user) {
+        console.log("登录成功:", data.user);
         toast.success("登录成功！");
         router.push("/dashboard");
       }
@@ -82,26 +112,28 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                邮箱
-              </label>
+              <Label htmlFor="email">邮箱</Label>
               <Input
                 id="email"
                 name="email"
                 type="email"
                 placeholder="m@example.com"
+                value={formData.email}
+                onChange={handleInputChange}
                 required
+                disabled={loading}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                密码
-              </label>
+              <Label htmlFor="password">密码</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
+                value={formData.password}
+                onChange={handleInputChange}
                 required
+                disabled={loading}
               />
             </div>
             {error && (
@@ -149,6 +181,7 @@ export default function LoginPage() {
                     toast.error("GitHub登录失败");
                   }
                 }}
+                disabled={loading}
               >
                 GitHub
               </Button>
@@ -172,6 +205,7 @@ export default function LoginPage() {
                     toast.error("Google登录失败");
                   }
                 }}
+                disabled={loading}
               >
                 Google
               </Button>
