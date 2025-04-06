@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { supabase, testSupabaseConnection } from "@/lib/supabase";
+import { supabase } from "@/lib/supabase";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
 
@@ -24,8 +24,8 @@ export default function LoginPage() {
   useEffect(() => {
     const checkConnection = async () => {
       try {
-        const isConnected = await testSupabaseConnection();
-        setConnectionStatus(isConnected ? "连接正常" : "连接失败");
+        const { error } = await supabase.from('profiles').select('count').limit(1);
+        setConnectionStatus(error ? "连接失败" : "连接正常");
       } catch (err) {
         console.error("连接测试异常:", err);
         setConnectionStatus("连接测试异常");

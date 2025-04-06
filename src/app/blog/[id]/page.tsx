@@ -17,8 +17,13 @@ export async function generateStaticParams() {
   }));
 }
 
-export default function BlogDetailPage({ params }: { params: { id: string } }) {
-  const blogId = use(Promise.resolve(params.id));
+interface PageParams {
+  id: string;
+}
+
+export default function BlogDetailPage({ params }: { params: Promise<PageParams> }) {
+  const resolvedParams = use(params);
+  const blogId = resolvedParams.id;
   const blog = use(getBlogPost(blogId));
 
   if (!blog) {
