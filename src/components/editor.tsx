@@ -28,7 +28,9 @@ export function Editor({ content, onChange, className }: EditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        codeBlock: false,
+      }),
       Placeholder.configure({
         placeholder: '开始写作...',
       }),

@@ -21,6 +21,7 @@ export function Navbar() {
   const { user, signOut } = useUser();
   const router = useRouter();
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   // 获取用户首字母作为头像回退
   const getInitials = (name: string) => {
@@ -81,7 +82,7 @@ export function Navbar() {
         </div>
         <div className="flex items-center gap-4">
           <ModeToggle />
-          <DropdownMenu>
+          <DropdownMenu open={isDropdownOpen} onOpenChange={setIsDropdownOpen}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
@@ -102,15 +103,22 @@ export function Navbar() {
               <DropdownMenuSeparator />
               {user ? (
                 <>
-                  <DropdownMenuItem>
-                    <Link href="/dashboard">控制台</Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/dashboard" onClick={() => setIsDropdownOpen(false)}>
+                      控制台
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/settings">设置</Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/settings" onClick={() => setIsDropdownOpen(false)}>
+                      设置
+                    </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem 
-                    onClick={handleSignOut}
+                    onClick={() => {
+                      handleSignOut();
+                      setIsDropdownOpen(false);
+                    }}
                     disabled={isSigningOut}
                     className="text-red-600 dark:text-red-400"
                   >
@@ -119,11 +127,15 @@ export function Navbar() {
                 </>
               ) : (
                 <>
-                  <DropdownMenuItem>
-                    <Link href="/login">登录</Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/login" onClick={() => setIsDropdownOpen(false)}>
+                      登录
+                    </Link>
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <Link href="/register">注册</Link>
+                  <DropdownMenuItem asChild>
+                    <Link href="/register" onClick={() => setIsDropdownOpen(false)}>
+                      注册
+                    </Link>
                   </DropdownMenuItem>
                 </>
               )}

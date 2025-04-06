@@ -11,6 +11,9 @@ const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
   variable: '--font-inter',
+  preload: true,
+  adjustFontFallback: true,
+  fallback: ['system-ui', 'arial'],
 });
 
 export const viewport: Viewport = {
@@ -57,7 +60,23 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
+      <head>
+        <link
+          rel="preload"
+          href="/_next/static/css/app/layout.css"
+          as="style"
+        />
+        <link
+          rel="preload"
+          href="/_next/static/media/a34f9d1faa5f3315-s.p.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className={cn("min-h-screen font-sans antialiased", inter.className)}>
+        <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900" />
+        <div className="fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-200/30 via-transparent to-transparent dark:from-blue-500/10" />
         <Providers>
           <div className="relative flex min-h-screen flex-col">
             <Navbar />

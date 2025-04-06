@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
     optimizePackageImports: ['@tiptap/react', '@tiptap/starter-kit'],
   },
-  // 减少不必要的预加载
+  // 优化资源预加载
   async headers() {
     return [
       {
@@ -18,7 +18,10 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Link',
-            value: '</_next/static/css/app/layout.css>; rel=preload; as=style',
+            value: [
+              '</_next/static/css/app/layout.css>; rel=preload; as=style; crossorigin=anonymous',
+              '</_next/static/media/a34f9d1faa5f3315-s.p.woff2>; rel=preload; as=font; crossorigin=anonymous; type=font/woff2',
+            ].join(','),
           },
         ],
       },
