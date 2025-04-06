@@ -57,15 +57,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="zh-CN" suppressHydrationWarning>
-      <head>
-        <link
-          rel="preload"
-          href="/fonts/inter-var.woff2"
-          as="font"
-          type="font/woff2"
-          crossOrigin="anonymous"
-        />
-      </head>
       <body className={cn("min-h-screen bg-background font-sans antialiased", inter.className)}>
         <Providers>
           <div className="relative flex min-h-screen flex-col">
