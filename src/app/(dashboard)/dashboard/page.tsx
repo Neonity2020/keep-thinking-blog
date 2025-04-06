@@ -156,7 +156,12 @@ export default function DashboardPage() {
     <div className="container mx-auto py-10">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">仪表盘</h1>
-        <Button onClick={handleSignOut}>退出登录</Button>
+        <div className="flex gap-4">
+          <Link href="/blog/new">
+            <Button>新建博客</Button>
+          </Link>
+          <Button onClick={handleSignOut}>退出登录</Button>
+        </div>
       </div>
 
       {error && (

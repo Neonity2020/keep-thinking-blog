@@ -6,9 +6,9 @@ import { use } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Editor } from '@/components/editor';
 
 interface PageParams {
   id: string;
@@ -68,15 +68,6 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
         throw new Error('请先登录');
       }
 
-      console.log('开始更新博客:', blogId);
-      console.log('更新内容:', {
-        title,
-        content,
-        tags: tags.split(',').map(tag => tag.trim()),
-        read_time: parseInt(readTime) || 5,
-        updated_at: new Date().toISOString()
-      });
-
       const { error } = await supabase
         .from('blogs')
         .update({
@@ -88,21 +79,10 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
         })
         .eq('id', blogId);
 
-      if (error) {
-        console.error('更新博客失败:', error);
-        console.error('错误详情:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint
-        });
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('博客更新成功，跳转到详情页面');
       router.push(`/blog/${blogId}`);
     } catch (err) {
-      console.error('更新博客异常:', err);
       setError(err instanceof Error ? err.message : '更新博客失败');
     }
   };
@@ -142,12 +122,10 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
 
             <div className="space-y-2">
               <Label htmlFor="content">内容</Label>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-                className="min-h-[300px]"
+              <Editor
+                content={content}
+                onChange={(newContent) => setContent(newContent)}
+                className="min-h-[300px] border rounded-md p-4"
               />
             </div>
 
