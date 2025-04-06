@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
+import { BlogContent } from '@/components/blog-content';
 
 interface Blog {
   id: string;
@@ -99,13 +100,7 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="prose max-w-none">
-              {blog.content.split('\n').map((paragraph, index) => (
-                <p key={index} className="mb-4">
-                  {paragraph}
-                </p>
-              ))}
-            </div>
+            <BlogContent content={blog.content} />
           </CardContent>
         </Card>
       </div>

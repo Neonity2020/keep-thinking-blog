@@ -75,9 +75,12 @@ export default function BlogListPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 line-clamp-3">
-                  {blog.content}
-                </p>
+                <div 
+                  className="prose prose-sm max-w-none line-clamp-3"
+                  dangerouslySetInnerHTML={{ 
+                    __html: blog.content.replace(/<[^>]*>/g, '').slice(0, 200) + '...' 
+                  }}
+                />
               </CardContent>
             </Card>
           </Link>

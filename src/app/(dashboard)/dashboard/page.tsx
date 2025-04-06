@@ -212,9 +212,14 @@ export default function DashboardPage() {
               <p>创建时间: {new Date(blog.created_at).toLocaleDateString()}</p>
             </CardContent>
             <CardFooter className="flex justify-between">
-              <Link href={`/blog/${blog.id}/edit`}>
-                <Button variant="outline">编辑</Button>
-              </Link>
+              <div className="flex gap-2">
+                <Link href={`/blog/${blog.id}`}>
+                  <Button variant="outline">查看</Button>
+                </Link>
+                <Link href={`/blog/${blog.id}/edit`}>
+                  <Button variant="outline">编辑</Button>
+                </Link>
+              </div>
               <Button variant="destructive" onClick={() => handleDelete(blog.id)}>
                 删除
               </Button>
