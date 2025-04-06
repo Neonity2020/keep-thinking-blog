@@ -16,168 +16,178 @@ interface BlogPost {
 
 export async function getBlogPost(id: string): Promise<BlogPost | null> {
   try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
-      return null;
+    // 检查环境变量
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('缺少 Supabase 环境变量');
+      console.error('URL:', supabaseUrl ? '已设置' : '未设置');
+      console.error('Key:', supabaseKey ? '已设置' : '未设置');
+      throw new Error('缺少必要的 Supabase 环境变量');
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        auth: {
-          persistSession: false
-        }
+    console.log('开始获取博客:', id);
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Supabase Key:', supabaseKey.slice(0, 10) + '...');
+
+    // 创建 Supabase 客户端
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false
+      },
+      db: {
+        schema: 'public'
       }
-    );
+    });
 
-    console.log('Fetching blog post:', id);
+    // 首先测试连接
+    const { error: testError } = await supabase.auth.getSession();
+    if (testError) {
+      console.error('Supabase 连接测试失败:', testError);
+      throw new Error(`Supabase 连接失败: ${testError.message}`);
+    }
 
-    const { data: blog, error } = await supabase
+    // 获取博客内容
+    console.log('正在查询博客表...');
+    const { data: blog, error: blogError } = await supabase
       .from('blogs')
       .select('id, title, content, created_at, read_time, tags, author_id')
       .eq('id', id)
       .single();
 
-    if (error) {
-      console.error('Supabase error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
+    if (blogError) {
+      console.error('获取博客失败:', blogError);
+      console.error('错误详情:', {
+        message: blogError.message,
+        code: blogError.code,
+        details: blogError.details,
+        hint: blogError.hint
       });
-      return null;
+      
+      // 检查是否是表不存在的错误
+      if (blogError.message?.includes('relation "blogs" does not exist')) {
+        throw new Error('博客表不存在，请检查数据库结构');
+      }
+      
+      throw new Error(`获取博客失败: ${blogError.message}`);
     }
 
     if (!blog) {
-      console.log('Blog not found');
+      console.log('博客不存在:', id);
       return null;
     }
 
-    console.log('Blog found:', blog);
+    console.log('博客内容获取成功:', {
+      id: blog.id,
+      title: blog.title,
+      author_id: blog.author_id
+    });
 
-    return {
+    // 获取作者信息
+    console.log('正在查询作者信息...');
+    const { data: author, error: authorError } = await supabase
+      .from('profiles')
+      .select('id, name, avatar')
+      .eq('id', blog.author_id)
+      .single();
+
+    if (authorError) {
+      console.error('获取作者信息失败:', authorError);
+      console.error('错误详情:', {
+        message: authorError.message,
+        code: authorError.code,
+        details: authorError.details,
+        hint: authorError.hint
+      });
+    }
+
+    console.log('作者信息:', author || '未找到作者信息');
+
+    const result = {
       id: blog.id,
       title: blog.title,
       content: blog.content,
       date: new Date(blog.created_at).toLocaleDateString('zh-CN'),
-      readTime: `${blog.read_time} 分钟阅读`,
+      readTime: `${blog.read_time || 5} 分钟阅读`,
       tags: blog.tags || [],
       author: {
-        id: blog.author_id || 'unknown',
-        name: '匿名作者',
-        avatar: '/default-avatar.png'
+        id: author?.id || blog.author_id || 'unknown',
+        name: author?.name || '匿名作者',
+        avatar: author?.avatar || '/default-avatar.png'
       }
     };
+
+    console.log('最终返回的博客数据:', {
+      id: result.id,
+      title: result.title,
+      author: result.author
+    });
+    return result;
   } catch (error) {
-    console.error('Error in getBlogPost:', error);
+    console.error('获取博客异常:', error);
     if (error instanceof Error) {
-      console.error('Error details:', {
+      console.error('错误详情:', {
         message: error.message,
         stack: error.stack
       });
     }
-    return null;
+    throw error;
   }
 }
 
 export async function getAllBlogPosts() {
   try {
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-      console.error('Missing Supabase environment variables');
+    // 检查环境变量
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('缺少 Supabase 环境变量');
       return [];
     }
 
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('Supabase Key:', process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        auth: {
-          persistSession: false
-        }
+    // 创建 Supabase 客户端
+    const supabase = createClient(supabaseUrl, supabaseKey, {
+      auth: {
+        persistSession: false
       }
-    );
+    });
 
-    console.log('Fetching blogs from Supabase...');
-
-    // 首先尝试只获取博客基本信息
-    const { data: blogs, error } = await supabase
+    // 获取博客列表
+    const { data, error } = await supabase
       .from('blogs')
       .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Supabase error:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        details: error.details,
-        hint: error.hint
-      });
+      console.error('获取博客列表失败:', error);
       return [];
     }
 
-    if (!blogs) {
-      console.log('No blogs found');
+    if (!data) {
+      console.log('未找到博客文章');
       return [];
     }
 
-    console.log('Successfully fetched blogs:', blogs.length);
-
-    // 然后获取作者信息
-    const authorIds = blogs.map(blog => blog.author_id);
-    const { data: profiles, error: profilesError } = await supabase
-      .from('profiles')
-      .select('*')
-      .in('id', authorIds);
-
-    if (profilesError) {
-      console.error('Error fetching profiles:', profilesError);
-      return blogs.map(blog => ({
-        id: blog.id,
-        title: blog.title,
-        content: blog.content,
-        date: new Date(blog.created_at).toLocaleDateString('zh-CN'),
-        readTime: `${blog.read_time} 分钟阅读`,
-        tags: blog.tags || [],
-        author: {
-          id: 'unknown',
-          name: '匿名作者',
-          avatar: '/default-avatar.png'
-        }
-      }));
-    }
-
-    const profilesMap = new Map(profiles?.map(profile => [profile.id, profile]) || []);
-
-    return blogs.map(blog => {
-      const author = profilesMap.get(blog.author_id);
-      return {
-        id: blog.id,
-        title: blog.title,
-        content: blog.content,
-        date: new Date(blog.created_at).toLocaleDateString('zh-CN'),
-        readTime: `${blog.read_time} 分钟阅读`,
-        tags: blog.tags || [],
-        author: {
-          id: author?.id || 'unknown',
-          name: author?.name || '匿名作者',
-          avatar: author?.avatar || '/default-avatar.png'
-        }
-      };
-    });
+    // 转换数据格式
+    return data.map(blog => ({
+      id: blog.id,
+      title: blog.title,
+      content: blog.content,
+      date: new Date(blog.created_at).toLocaleDateString('zh-CN'),
+      readTime: `${blog.read_time || 5} 分钟阅读`,
+      tags: blog.tags || [],
+      author: {
+        id: blog.author_id,
+        name: '匿名作者',
+        avatar: '/default-avatar.png'
+      }
+    }));
   } catch (error) {
-    console.error('Error in getAllBlogPosts:', error);
-    if (error instanceof Error) {
-      console.error('Error details:', {
-        message: error.message,
-        stack: error.stack
-      });
-    }
+    console.error('获取博客列表异常:', error);
     return [];
   }
 } 

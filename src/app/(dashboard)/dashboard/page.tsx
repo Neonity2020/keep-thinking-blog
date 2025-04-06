@@ -13,7 +13,7 @@ interface Blog {
   title: string;
   status: string;
   created_at: string;
-  views: number;
+  author_id: string;
 }
 
 export default function DashboardPage() {
@@ -23,9 +23,9 @@ export default function DashboardPage() {
   const [stats, setStats] = useState({
     total: 0,
     published: 0,
-    draft: 0,
-    totalViews: 0
+    draft: 0
   });
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -43,10 +43,38 @@ export default function DashboardPage() {
       try {
         console.log('开始获取博客列表...');
         console.log('当前用户ID:', user.id);
+        console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
         
+        // 首先测试数据库连接
+        const { error: testError } = await supabase
+          .from('blogs')
+          .select('count')
+          .limit(1);
+
+        if (testError) {
+          console.error('数据库连接测试失败:', testError);
+          console.error('错误详情:', {
+            message: testError.message,
+            code: testError.code,
+            details: testError.details,
+            hint: testError.hint
+          });
+          setError(`数据库连接失败: ${testError.message}`);
+          return;
+        }
+
+        console.log('数据库连接测试成功');
+
+        // 获取博客列表
         const { data, error } = await supabase
           .from('blogs')
-          .select('*')
+          .select(`
+            id,
+            title,
+            status,
+            created_at,
+            author_id
+          `)
           .eq('author_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -58,11 +86,13 @@ export default function DashboardPage() {
             details: error.details,
             hint: error.hint
           });
+          setError(`获取博客列表失败: ${error.message || '未知错误'}`);
           return;
         }
 
         if (!data) {
           console.log('未获取到博客数据');
+          setError('未获取到博客数据');
           return;
         }
 
@@ -71,9 +101,9 @@ export default function DashboardPage() {
         setStats({
           total: data.length,
           published: data.filter(blog => blog.status === 'published').length,
-          draft: data.filter(blog => blog.status === 'draft').length,
-          totalViews: data.reduce((sum, blog) => sum + (blog.views || 0), 0)
+          draft: data.filter(blog => blog.status === 'draft').length
         });
+        setError(null);
       } catch (error) {
         console.error('获取博客列表异常:', error);
         if (error instanceof Error) {
@@ -81,6 +111,9 @@ export default function DashboardPage() {
             message: error.message,
             stack: error.stack
           });
+          setError(`获取博客列表异常: ${error.message}`);
+        } else {
+          setError('获取博客列表时发生未知错误');
         }
       }
     };
@@ -98,137 +131,91 @@ export default function DashboardPage() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user) return;
+    try {
+      const { error } = await supabase
+        .from('blogs')
+        .delete()
+        .eq('id', id);
 
-    const { error } = await supabase
-      .from('blogs')
-      .delete()
-      .eq('id', id)
-      .eq('author_id', user.id);
+      if (error) {
+        console.error('删除博客失败:', error);
+        return;
+      }
 
-    if (error) {
-      console.error('Error deleting blog:', error);
-      return;
+      setBlogs(blogs.filter(blog => blog.id !== id));
+    } catch (error) {
+      console.error('删除博客异常:', error);
     }
-
-    setBlogs(blogs.filter(blog => blog.id !== id));
   };
 
   if (loading) {
-    return (
-      <div className="container mx-auto py-10">
-        <div className="flex items-center justify-center">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 w-48 bg-muted rounded"></div>
-            <div className="h-4 w-64 bg-muted rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null;
+    return <div>加载中...</div>;
   }
 
   return (
     <div className="container mx-auto py-10">
-      <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-4">
-            <h1 className="text-3xl font-bold tracking-tight">仪表盘</h1>
-            <p className="text-muted-foreground">
-              管理您的博客文章和账户设置
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-            <Button variant="outline" onClick={handleSignOut}>
-              退出
-            </Button>
-          </div>
-        </div>
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold">仪表盘</h1>
+        <Button onClick={handleSignOut}>退出登录</Button>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">总博客数</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">已发布</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.published}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">草稿</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.draft}</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">总浏览量</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalViews}</div>
-            </CardContent>
-          </Card>
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <span className="block sm:inline">{error}</span>
         </div>
+      )}
 
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold tracking-tight">我的博客</h2>
-          <Button asChild>
-            <Link href="/blog/new">创建博客</Link>
-          </Button>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>总博客数</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats.total}</p>
+          </CardContent>
+        </Card>
 
-        <div className="grid gap-4">
-          {blogs.map((blog) => (
-            <Card key={blog.id}>
-              <CardHeader>
-                <CardTitle>{blog.title}</CardTitle>
-                <CardDescription>
-                  发布于 {new Date(blog.created_at).toLocaleDateString('zh-CN')} · {blog.views || 0} 次浏览
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                      blog.status === "published"
-                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                        : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300"
-                    }`}
-                  >
-                    {blog.status === "published" ? "已发布" : "草稿"}
-                  </span>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button variant="outline" asChild>
-                  <Link href={`/blog/${blog.id}`}>查看</Link>
-                </Button>
-                <div className="flex gap-2">
-                  <Button variant="outline" asChild>
-                    <Link href={`/blog/${blog.id}/edit`}>编辑</Link>
-                  </Button>
-                  <Button variant="destructive" onClick={() => handleDelete(blog.id)}>
-                    删除
-                  </Button>
-                </div>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>已发布</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats.published}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>草稿</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{stats.draft}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {blogs.map((blog) => (
+          <Card key={blog.id}>
+            <CardHeader>
+              <CardTitle>{blog.title}</CardTitle>
+              <CardDescription>
+                状态: {blog.status === 'published' ? '已发布' : '草稿'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <p>创建时间: {new Date(blog.created_at).toLocaleDateString()}</p>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Link href={`/blog/${blog.id}/edit`}>
+                <Button variant="outline">编辑</Button>
+              </Link>
+              <Button variant="destructive" onClick={() => handleDelete(blog.id)}>
+                删除
+              </Button>
+            </CardFooter>
+          </Card>
+        ))}
       </div>
     </div>
   );

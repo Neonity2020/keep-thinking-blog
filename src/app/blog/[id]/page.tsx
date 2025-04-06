@@ -1,72 +1,114 @@
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+"use client";
+
+import { useEffect, useState, use } from "react";
+import { supabase } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MarkdownRenderer } from "@/components/markdown-renderer";
-import { getAllBlogPosts, getBlogPost } from "@/lib/blog";
-import { notFound } from "next/navigation";
-import { Metadata } from "next";
-import { use } from "react";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "博客详情",
-};
-
-export async function generateStaticParams() {
-  const blogs = await getAllBlogPosts();
-  return blogs.map((blog) => ({
-    id: blog.id,
-  }));
-}
-
-interface PageParams {
+interface Blog {
   id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  author_id: string;
+  status: string;
 }
 
-export default function BlogDetailPage({ params }: { params: Promise<PageParams> }) {
+export default function BlogDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const blogId = resolvedParams.id;
-  const blog = use(getBlogPost(blogId));
+  const [blog, setBlog] = useState<Blog | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchBlog = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('*')
+          .eq('id', resolvedParams.id)
+          .single();
+
+        if (error) {
+          throw error;
+        }
+
+        if (!data) {
+          throw new Error('博客不存在');
+        }
+
+        setBlog(data);
+        setError(null);
+      } catch (error) {
+        console.error('获取博客详情失败:', error);
+        setError('获取博客详情失败，请稍后重试');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlog();
+  }, [resolvedParams.id]);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center">加载中...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center text-red-500">{error}</div>
+        <div className="text-center mt-4">
+          <Button onClick={() => router.push('/blog')}>返回博客列表</Button>
+        </div>
+      </div>
+    );
+  }
 
   if (!blog) {
-    notFound();
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center">博客不存在</div>
+        <div className="text-center mt-4">
+          <Button onClick={() => router.push('/blog')}>返回博客列表</Button>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="container mx-auto py-10">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-4">
-            <Avatar>
-              <AvatarImage src={blog.author.avatar} alt={blog.author.name} />
-              <AvatarFallback>{blog.author.name[0]}</AvatarFallback>
-            </Avatar>
-            <div>
-              <CardTitle className="text-3xl font-bold">{blog.title}</CardTitle>
-              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                <span>{blog.author.name}</span>
-                <span>·</span>
-                <span>{blog.date}</span>
-                <span>·</span>
-                <span>{blog.readTime}</span>
-              </div>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-4xl font-bold">{blog.title}</h1>
+          <Button variant="outline" onClick={() => router.push('/blog')}>
+            返回列表
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">
+              发布于 {new Date(blog.created_at).toLocaleDateString()}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="prose max-w-none">
+              {blog.content.split('\n').map((paragraph, index) => (
+                <p key={index} className="mb-4">
+                  {paragraph}
+                </p>
+              ))}
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-2 mb-6">
-            {blog.tags.map((tag) => (
-              <span
-                key={tag}
-                className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
-          <div className="prose prose-stone dark:prose-invert max-w-none">
-            <MarkdownRenderer content={blog.content} />
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
-} 
+}

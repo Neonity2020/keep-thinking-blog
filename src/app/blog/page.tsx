@@ -1,61 +1,94 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { getAllBlogPosts } from "@/lib/blog";
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/lib/supabase";
 import Link from "next/link";
-import { Metadata } from "next";
 
-export const metadata: Metadata = {
-  title: "博客 | Keep Thinking",
-  description: "探索我们的博客文章，获取最新见解和知识分享。",
-  keywords: ["博客", "文章", "知识分享", "技术", "思考"],
-};
+interface Blog {
+  id: string;
+  title: string;
+  content: string;
+  created_at: string;
+  author_id: string;
+  status: string;
+}
 
-export default async function BlogPage() {
-  const blogs = await getAllBlogPosts();
+export default function BlogListPage() {
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('blogs')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) {
+          throw error;
+        }
+
+        setBlogs(data || []);
+        setError(null);
+      } catch (error) {
+        console.error('获取博客列表失败:', error);
+        setError('获取博客列表失败，请稍后重试');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center">加载中...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto py-10">
+        <div className="text-center text-red-500">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-10">
-      <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-4">
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            博客文章
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            探索我们的博客文章，获取最新见解和知识分享。
-          </p>
-        </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {blogs.map((blog) => (
-            <Link key={blog.id} href={`/blog/${blog.id}`}>
-              <Card className="h-full transition-colors hover:bg-muted/50">
-                <CardHeader>
-                  <CardTitle>{blog.title}</CardTitle>
-                  <CardDescription>
-                    {blog.date} · {blog.readTime}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex flex-wrap gap-2">
-                    {blog.tags.map((tag: string) => (
-                      <span
-                        key={tag}
-                        className="inline-flex items-center rounded-md bg-muted px-2 py-1 text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-6 rounded-full bg-muted" />
-                    <span className="text-sm font-medium">{blog.author.name}</span>
-                  </div>
-                </CardFooter>
-              </Card>
-            </Link>
-          ))}
-        </div>
+      <h1 className="text-3xl font-bold mb-8">博客文章</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {blogs.map((blog) => (
+          <Link href={`/blog/${blog.id}`} key={blog.id}>
+            <Card className="h-full hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle>{blog.title}</CardTitle>
+                <CardDescription>
+                  发布于 {new Date(blog.created_at).toLocaleDateString()}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 line-clamp-3">
+                  {blog.content}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        ))}
       </div>
+
+      {blogs.length === 0 && (
+        <div className="text-center text-gray-500 mt-8">
+          暂无博客文章
+        </div>
+      )}
     </div>
   );
-} 
+}

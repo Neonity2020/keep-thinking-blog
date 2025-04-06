@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Editor } from '@/components/editor';
 
 export default function NewBlogPage() {
   const router = useRouter();
@@ -67,12 +67,10 @@ export default function NewBlogPage() {
 
             <div className="space-y-2">
               <Label htmlFor="content">内容</Label>
-              <Textarea
-                id="content"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                required
-                className="min-h-[300px]"
+              <Editor
+                content={content}
+                onChange={(newContent) => setContent(newContent)}
+                className="min-h-[300px] border rounded-md p-4"
               />
             </div>
 

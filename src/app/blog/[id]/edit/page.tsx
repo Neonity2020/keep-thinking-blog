@@ -46,8 +46,8 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
 
         setTitle(blog.title);
         setContent(blog.content);
-        setTags(blog.tags.join(', '));
-        setReadTime(blog.read_time.toString());
+        setTags(blog.tags?.join(', ') || '');
+        setReadTime(blog.read_time?.toString() || '5');
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取博客失败');
       } finally {
@@ -68,6 +68,15 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
         throw new Error('请先登录');
       }
 
+      console.log('开始更新博客:', blogId);
+      console.log('更新内容:', {
+        title,
+        content,
+        tags: tags.split(',').map(tag => tag.trim()),
+        read_time: parseInt(readTime) || 5,
+        updated_at: new Date().toISOString()
+      });
+
       const { error } = await supabase
         .from('blogs')
         .update({
@@ -79,10 +88,21 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
         })
         .eq('id', blogId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('更新博客失败:', error);
+        console.error('错误详情:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        throw error;
+      }
 
+      console.log('博客更新成功，跳转到详情页面');
       router.push(`/blog/${blogId}`);
     } catch (err) {
+      console.error('更新博客异常:', err);
       setError(err instanceof Error ? err.message : '更新博客失败');
     }
   };
