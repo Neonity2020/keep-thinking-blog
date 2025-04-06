@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { TypewriterEffect } from "@/components/typewriter-effect";
 
 // 模拟博客数据
 const blogs = [
@@ -63,31 +64,35 @@ export default function Home() {
 
   return (
     <div className="container mx-auto py-10">
-      <section className="flex flex-col items-center justify-center text-center py-20 space-y-6">
-        <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+      <section className="flex flex-col items-center justify-center text-center py-12 sm:py-16 md:py-20 space-y-4 sm:space-y-6">
+        <h1 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl lg:text-6xl">
           欢迎来到 Keep Thinking
         </h1>
-        <p className="max-w-[700px] text-muted-foreground md:text-xl">
-          一个现代化的多人博客平台，支持暗色/亮色模式，响应式设计，以及代码高亮。
-        </p>
-        <div className="flex flex-wrap gap-4 justify-center">
-          <Button asChild size="lg">
+        <TypewriterEffect 
+          text="一个现代化的多人博客平台，支持暗色/亮色模式，响应式设计，以及代码高亮。"
+          className="max-w-[800px] text-muted-foreground text-base sm:text-lg md:text-xl px-4 min-h-[1.5em] whitespace-normal"
+          delay={800}
+          speed={30}
+          loopInterval={5000}
+        />
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center w-full sm:w-auto px-4 sm:px-0">
+          <Button asChild size="lg" className="w-full sm:w-auto">
             <Link href="/blog">浏览博客</Link>
           </Button>
-          <Button asChild variant="outline" size="lg">
+          <Button asChild variant="outline" size="lg" className="w-full sm:w-auto">
             <Link href="/login">登录</Link>
           </Button>
         </div>
       </section>
 
-      <section className="py-10">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-3xl font-bold tracking-tight">最新博客</h2>
-          <Button asChild variant="ghost">
+      <section className="py-8 sm:py-10 px-4 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 sm:mb-8 gap-3">
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">最新博客</h2>
+          <Button asChild variant="ghost" className="w-full sm:w-auto">
             <Link href="/blog">查看全部</Link>
           </Button>
         </div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {blogs.map((blog) => (
             <BlogCard key={blog.id} {...blog} />
           ))}
