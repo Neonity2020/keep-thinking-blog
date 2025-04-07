@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from '@/lib/supabase';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Blog {
   id: string;
@@ -77,6 +78,7 @@ export default function DashboardPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [publishingBlogs, setPublishingBlogs] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!loading && !user) {
@@ -170,6 +172,41 @@ export default function DashboardPage() {
     }
   };
 
+  const handlePublish = async (id: string) => {
+    setPublishingBlogs(prev => ({ ...prev, [id]: true }));
+    
+    try {
+      const { error } = await supabase
+        .from('blogs')
+        .update({
+          status: 'published',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.error('发布博客失败:', error);
+        return;
+      }
+
+      // 更新本地状态
+      setBlogs(blogs.map(blog => 
+        blog.id === id ? { ...blog, status: 'published' } : blog
+      ));
+      
+      // 更新统计信息
+      setStats(prev => ({
+        ...prev,
+        published: prev.published + 1,
+        draft: prev.draft - 1
+      }));
+    } catch (error) {
+      console.error('发布博客异常:', error);
+    } finally {
+      setPublishingBlogs(prev => ({ ...prev, [id]: false }));
+    }
+  };
+
   if (loading || isLoading) {
     return <DashboardSkeleton />;
   }
@@ -232,7 +269,9 @@ export default function DashboardPage() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg sm:text-xl line-clamp-2">{blog.title}</CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  状态: {blog.status === 'published' ? '已发布' : '草稿'}
+                  <Badge variant={blog.status === 'published' ? 'default' : 'outline'}>
+                    {blog.status === 'published' ? '已发布' : '草稿'}
+                  </Badge>
                 </CardDescription>
               </CardHeader>
               <CardContent className="flex-grow">
@@ -247,13 +286,25 @@ export default function DashboardPage() {
                     <Button variant="outline" className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4">编辑</Button>
                   </Link>
                 </div>
-                <Button 
-                  variant="destructive" 
-                  onClick={() => handleDelete(blog.id)}
-                  className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4"
-                >
-                  删除
-                </Button>
+                <div className="flex gap-2 w-full sm:w-auto">
+                  {blog.status !== 'published' && (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => handlePublish(blog.id)}
+                      disabled={publishingBlogs[blog.id]}
+                      className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                    >
+                      {publishingBlogs[blog.id] ? '发布中...' : '发布'}
+                    </Button>
+                  )}
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => handleDelete(blog.id)}
+                    className="w-full sm:w-auto text-xs sm:text-sm px-2 sm:px-4"
+                  >
+                    删除
+                  </Button>
+                </div>
               </CardFooter>
             </Card>
           ))

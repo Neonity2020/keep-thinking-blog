@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Editor } from '@/components/editor';
+import { Badge } from '@/components/ui/badge';
 
 interface PageParams {
   id: string;
@@ -23,8 +24,10 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
   const [readTime, setReadTime] = useState('');
+  const [status, setStatus] = useState('draft');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -48,6 +51,7 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
         setContent(blog.content);
         setTags(blog.tags?.join(', ') || '');
         setReadTime(blog.read_time?.toString() || '5');
+        setStatus(blog.status || 'draft');
       } catch (err) {
         setError(err instanceof Error ? err.message : '获取博客失败');
       } finally {
@@ -87,6 +91,35 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
     }
   };
 
+  const handlePublish = async () => {
+    setPublishing(true);
+    setError('');
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('请先登录');
+      }
+
+      const { error } = await supabase
+        .from('blogs')
+        .update({
+          status: 'published',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', blogId);
+
+      if (error) throw error;
+
+      setStatus('published');
+      router.push(`/blog/${blogId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '发布博客失败');
+    } finally {
+      setPublishing(false);
+    }
+  };
+
   if (loading) {
     return <div className="container mx-auto py-10">加载中...</div>;
   }
@@ -105,8 +138,11 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
   return (
     <div className="container mx-auto py-10">
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>编辑博客</CardTitle>
+          <Badge variant={status === 'published' ? 'default' : 'outline'}>
+            {status === 'published' ? '已发布' : '草稿'}
+          </Badge>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -156,6 +192,16 @@ export default function EditBlogPage({ params }: { params: Promise<PageParams> }
 
             <div className="flex gap-4">
               <Button type="submit">保存更改</Button>
+              {status !== 'published' && (
+                <Button 
+                  type="button" 
+                  onClick={handlePublish} 
+                  disabled={publishing}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {publishing ? '发布中...' : '发布博客'}
+                </Button>
+              )}
               <Button
                 type="button"
                 variant="outline"

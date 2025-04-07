@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { BlogContent } from '@/components/blog-content';
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 interface Blog {
   id: string;
@@ -117,6 +118,9 @@ export default function BlogDetailPage({ params }: { params: Promise<{ id: strin
       <div className="max-w-4xl mx-auto">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 sm:gap-0 mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold break-words">{blog.title}</h1>
+          <Badge variant={blog.status === 'published' ? 'default' : 'outline'}>
+            {blog.status === 'published' ? '已发布' : '草稿'}
+          </Badge>
         </div>
 
         <Card className="shadow-sm">
