@@ -75,6 +75,9 @@ export function Navbar() {
             <Link href="/blog" className="text-sm font-medium transition-colors hover:text-primary">
               博客
             </Link>
+            <Link href="/script" className="text-sm font-medium transition-colors hover:text-primary">
+              剧本
+            </Link>
             <Link href="/about" className="text-sm font-medium transition-colors hover:text-primary">
               关于
             </Link>
