@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Character, Script, ScriptLine } from '@/types/script';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -8,9 +8,9 @@ import { Card, CardContent } from '@/components/ui/card';
 
 // 示例数据
 const sampleCharacters: Character[] = [
-  { id: '1', name: '张牧之', color: '#4CAF50' },
-  { id: '2', name: '黄四郎', color: '#F44336' },
-  { id: '3', name: '老汤', color: '#2196F3' },
+  { id: '1', name: '张牧之', color: '#F44336', avatar: '/avatars/script/zhang-avatar.jpg' },
+  { id: '2', name: '黄四郎', color: '#2196F3', avatar: '/avatars/script/huang-avatar.jpg' },
+  { id: '3', name: '老汤', color: '#4CAF50', avatar: '/avatars/script/tang-avatar.jpg' },
 ];
 
 const sampleLines: ScriptLine[] = [
@@ -27,7 +27,7 @@ const sampleLines: ScriptLine[] = [
 
 const sampleScript: Script = {
   id: '1',
-  title: '公园野餐计划',
+  title: '鸿门宴',
   characters: sampleCharacters,
   lines: sampleLines,
 };
@@ -39,30 +39,40 @@ export default function ScriptViewer() {
   const [displayedLines, setDisplayedLines] = useState<ScriptLine[]>([]);
   const [currentText, setCurrentText] = useState<string>('');
   const [textIndex, setTextIndex] = useState<number>(0);
+  const [showAllLines, setShowAllLines] = useState<boolean>(false);
 
   const getCharacterById = (id: string): Character | undefined => {
     return script.characters.find(char => char.id === id);
   };
 
-  const handlePlay = () => {
+  const handlePlay = useCallback(() => {
     setIsPlaying(true);
     setCurrentLineIndex(0);
     setDisplayedLines([script.lines[0]]);
-  };
+  }, [script.lines]);
 
   const handlePause = () => {
     setIsPlaying(false);
   };
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setIsPlaying(false);
     setCurrentLineIndex(-1);
     setDisplayedLines([]);
     setCurrentText('');
     setTextIndex(0);
-  };
+    setShowAllLines(false);
+  }, []);
 
-  const handleNextLine = () => {
+  const showAllDialogLines = useCallback(() => {
+    setDisplayedLines(script.lines);
+    setShowAllLines(true);
+    setIsPlaying(false);
+    setCurrentText('');
+    setTextIndex(0);
+  }, [script.lines]);
+
+  const handleNextLine = useCallback(() => {
     if (currentLineIndex < script.lines.length - 1) {
       const nextIndex = currentLineIndex + 1;
       setCurrentLineIndex(nextIndex);
@@ -72,13 +82,13 @@ export default function ScriptViewer() {
     } else {
       setIsPlaying(false);
     }
-  };
+  }, [currentLineIndex, script.lines, displayedLines]);
 
   // 添加打字效果
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
     
-    if (isPlaying && currentLineIndex >= 0) {
+    if (isPlaying && currentLineIndex >= 0 && !showAllLines) {
       const currentLine = script.lines[currentLineIndex];
       if (textIndex < currentLine.text.length) {
         timer = setTimeout(() => {
@@ -97,28 +107,7 @@ export default function ScriptViewer() {
     return () => {
       if (timer) clearTimeout(timer);
     };
-  }, [isPlaying, currentLineIndex, textIndex]);
-
-  // 添加键盘事件监听
-  React.useEffect(() => {
-    const handleKeyPress = (event: KeyboardEvent) => {
-      if (event.code === 'Space') {
-        event.preventDefault(); // 防止页面滚动
-        if (isPlaying) {
-          handlePause();
-        } else {
-          handlePlay();
-        }
-      } else if (event.code === 'Enter') {
-        handleReset();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => {
-      window.removeEventListener('keydown', handleKeyPress);
-    };
-  }, [isPlaying]); // 依赖项包含 isPlaying 以确保使用最新的状态
+  }, [isPlaying, currentLineIndex, textIndex, handleNextLine, script.lines, showAllLines]);
 
   return (
     <div className="space-y-6">
@@ -129,15 +118,20 @@ export default function ScriptViewer() {
         >
           {isPlaying ? '暂停' : '播放'}
         </Button>
-        <Button onClick={handleReset} variant="outline">重置</Button>
+        <Button 
+          onClick={showAllLines ? handleReset : showAllDialogLines} 
+          variant="outline"
+        >
+          {showAllLines ? '重置' : '显示全部'}
+        </Button>
       </div>
 
       <div className="flex justify-center space-x-8 mb-8">
         {script.characters.map(character => (
           <div key={character.id} className="flex flex-col items-center">
-            <Avatar className="h-16 w-16 border-2" style={{ borderColor: character.color }}>
-              <AvatarImage src={character.avatar} />
-              <AvatarFallback>{character.name.substring(0, 3)}</AvatarFallback>
+            <Avatar className="h-16 w-16 border-2 overflow-hidden" style={{ borderColor: character.color }}>
+              <AvatarImage src={character.avatar} className="object-cover" />
+              <AvatarFallback className="rounded-full">{character.name.substring(0, 3)}</AvatarFallback>
             </Avatar>
             <span className="mt-2 font-medium">{character.name}</span>
           </div>
@@ -156,15 +150,16 @@ export default function ScriptViewer() {
                   className="flex items-start space-x-3 p-3 rounded-lg"
                   style={{ backgroundColor: `${character?.color}15` }}
                 >
-                  <Avatar className="h-8 w-8" style={{ backgroundColor: character?.color }}>
-                    <AvatarFallback>{character?.name.substring(0, 1)}</AvatarFallback>
+                  <Avatar className="h-10 w-10 overflow-hidden" style={{ borderColor: character?.color, borderWidth: '2px', borderStyle: 'solid' }}>
+                    <AvatarImage src={character?.avatar} className="object-cover" />
+                    <AvatarFallback className="rounded-full">{character?.name.substring(0, 1)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <div className="font-medium" style={{ color: character?.color }}>
                       {character?.name}
                     </div>
                     <div className="mt-1">
-                      {isCurrentLine ? currentText : line.text}
+                      {showAllLines ? line.text : (isCurrentLine ? currentText : line.text)}
                     </div>
                   </div>
                 </div>
